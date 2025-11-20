@@ -1,3 +1,55 @@
 @import "tailwindcss";
 
-/* Custom styles can go below */
+/* ITI Examination System - Custom Theme */
+
+@theme {
+  /* ITI Brand Colors - matching official logo */
+  --color-iti-charcoal: #2D2D2D;
+  --color-iti-maroon: #6B1528;
+  --color-iti-red: #8B1538;
+  --color-iti-rose: #E8919B;
+  --color-iti-pink: #F5D5D8;
+  --color-iti-light: #F5F5F5;
+
+  /* Extended palette */
+  --color-iti-red-dark: #5A1020;
+  --color-iti-red-light: #A01845;
+
+  /* Functional colors */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+}
+
+/* Base styles */
+body {
+  font-family: 'Poppins', 'Roboto', sans-serif;
+  background-color: var(--color-iti-light);
+  color: var(--color-iti-charcoal);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-iti-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-iti-rose);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-iti-red);
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid var(--color-iti-red);
+  outline-offset: 2px;
+}

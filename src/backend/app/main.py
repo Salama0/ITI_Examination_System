@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from .config import get_settings, get_db, test_connection
+from .api import dashboard_router, auth_router
 
 settings = get_settings()
 
@@ -55,19 +56,20 @@ def health_check():
 
 
 # ============================================================================
-# API Routes (to be added)
+# API Routes
 # ============================================================================
 
-# TODO: Import and include routers
-# from .api import auth, students, instructors, courses, exams, questions, grades
-#
-# app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-# app.include_router(students.router, prefix="/api/students", tags=["Students"])
-# app.include_router(instructors.router, prefix="/api/instructors", tags=["Instructors"])
-# app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
-# app.include_router(exams.router, prefix="/api/exams", tags=["Exams"])
-# app.include_router(questions.router, prefix="/api/questions", tags=["Questions"])
-# app.include_router(grades.router, prefix="/api/grades", tags=["Grades"])
+# Authentication API
+app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
+
+# Dashboard API
+app.include_router(dashboard_router, prefix="/api/dashboard", tags=["Dashboard"])
+
+# TODO: Add more routers as needed
+# app.include_router(students_router, prefix="/api/students", tags=["Students"])
+# app.include_router(instructors_router, prefix="/api/instructors", tags=["Instructors"])
+# app.include_router(courses_router, prefix="/api/courses", tags=["Courses"])
+# app.include_router(exams_router, prefix="/api/exams", tags=["Exams"])
 
 
 # ============================================================================
