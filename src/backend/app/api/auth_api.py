@@ -135,21 +135,21 @@ async def get_current_user(
             raise credentials_exception
 
         user = UserInDB(
-            user_id=row[0],
-            email=row[1],
-            password_hash="",  # Don't return password hash
-            user_type=row[2],
-            student_id=row[3],
-            instructor_id=row[4],
-            is_active=bool(row[5]),
-            full_name=row[7] if row[7] else "User",
-            intake_id=row[8],
-            track_id=row[9],
-            branch_id=row[10],
-            track_name=row[11],
-            branch_name=row[12],
-            department_id=row[13],
-            department_name=row[14]
+            user_id=row[0],         # User_ID
+            email=row[1],           # Email
+            password_hash="",       # Don't return password hash
+            user_type=row[2],       # User_Type
+            student_id=row[3],      # Student_ID
+            instructor_id=row[4],   # Instructor_ID
+            is_active=bool(row[5]), # Is_Active
+            full_name=row[7] if row[7] else "User",  # Full_Name (skip row[6] which is Last_Login)
+            intake_id=row[8],       # Intake_ID
+            track_id=row[9],        # Track_id
+            branch_id=row[10],      # Bran_ID
+            track_name=row[11],     # Track_Name
+            branch_name=row[12],    # Bran_Name
+            department_id=row[13],  # Dep_ID
+            department_name=row[14] # Dep_Name
         )
 
         if not user.is_active:
@@ -160,7 +160,10 @@ async def get_current_user(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error in get_current_user: {e}")
+        import traceback
+        print(f"ERROR in get_current_user: {e}")
+        print(f"ERROR type: {type(e).__name__}")
+        print(f"Traceback: {traceback.format_exc()}")
         raise credentials_exception
 
 
@@ -199,7 +202,7 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={
-            "sub": user.user_id,
+            "sub": str(user.user_id),  # Convert to string - JWT requires sub to be a string
             "email": user.email,
             "user_type": user.user_type
         },
@@ -261,7 +264,7 @@ async def login_form(
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={
-            "sub": user.user_id,
+            "sub": str(user.user_id),  # Convert to string - JWT requires sub to be a string
             "email": user.email,
             "user_type": user.user_type
         },

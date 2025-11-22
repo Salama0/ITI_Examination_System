@@ -2,19 +2,40 @@ import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 
 interface InstructorCourse {
-  course_id: number;
-  course_name: string;
-  total_students: number;
-  total_exams: number;
+  crs_id: number;
+  crs_name: string;
+  crs_description: string | null;
+  track_id: number;
+  track_name: string;
+  bran_id: number;
+  bran_name: string;
+  intake_year: number;
+  department: string | null;
+  exams_created: number;
+  normal_exams: number;
+  corrective_exams: number;
+  total_students_in_track: number;
 }
 
 interface InstructorExam {
-  exam_id: number;
-  course_name: string;
+  ex_id: number;
+  crs_name: string;
   exam_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
   exam_type: string;
-  submissions: number;
-  avg_score: number | null;
+  track_name: string;
+  bran_name: string;
+  intake_year: number;
+  total_students_in_track: number;
+  students_who_submitted: number;
+  students_not_submitted: number;
+  total_submissions: number;
+  passed_count: number;
+  failed_count: number;
+  submission_rate_percentage: number | null;
+  average_score: number | null;
+  exam_status: string;
 }
 
 export default function InstructorDashboard() {
@@ -36,30 +57,31 @@ export default function InstructorDashboard() {
       }
 
       try {
-        // TODO: Implement backend endpoints for instructor-specific data
-        // For now, using placeholder data
         const token = localStorage.getItem('token');
 
         // Fetch instructor's courses
-        // const coursesResponse = await fetch(`http://localhost:8000/api/instructor/courses`, {
-        //   headers: { 'Authorization': `Bearer ${token}` }
-        // });
+        const coursesResponse = await fetch(`http://localhost:8000/api/instructor/courses`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!coursesResponse.ok) {
+          throw new Error('Failed to fetch courses');
+        }
+
+        const coursesData = await coursesResponse.json();
+        setCourses(coursesData);
 
         // Fetch instructor's exams
-        // const examsResponse = await fetch(`http://localhost:8000/api/instructor/exams`, {
-        //   headers: { 'Authorization': `Bearer ${token}` }
-        // });
+        const examsResponse = await fetch(`http://localhost:8000/api/instructor/exams`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-        // Placeholder data for now
-        setCourses([
-          { course_id: 1, course_name: 'Database Fundamentals', total_students: 45, total_exams: 3 },
-          { course_id: 2, course_name: 'Web Development', total_students: 38, total_exams: 2 },
-        ]);
+        if (!examsResponse.ok) {
+          throw new Error('Failed to fetch exams');
+        }
 
-        setExams([
-          { exam_id: 1, course_name: 'Database Fundamentals', exam_date: '2025-11-15', exam_type: 'Normal', submissions: 42, avg_score: 78.5 },
-          { exam_id: 2, course_name: 'Web Development', exam_date: '2025-11-18', exam_type: 'Normal', submissions: 35, avg_score: 82.3 },
-        ]);
+        const examsData = await examsResponse.json();
+        setExams(examsData);
 
         setLoading(false);
       } catch (err) {
@@ -110,9 +132,9 @@ export default function InstructorDashboard() {
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm font-medium text-gray-600">Total Students</p>
             <p className="text-3xl font-bold text-gray-900 mt-2">
-              {courses.reduce((sum, c) => sum + c.total_students, 0)}
+              {courses.reduce((sum, c) => sum + c.total_students_in_track, 0)}
             </p>
-            <p className="text-xs text-gray-500 mt-1">Across all courses</p>
+            <p className="text-xs text-gray-500 mt-1">Across all tracks</p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm font-medium text-gray-600">My Exams</p>
@@ -132,12 +154,15 @@ export default function InstructorDashboard() {
             ) : (
               <div className="space-y-4">
                 {courses.map((course) => (
-                  <div key={course.course_id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div key={course.crs_id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-semibold text-lg text-gray-900">{course.course_name}</h3>
+                        <h3 className="font-semibold text-lg text-gray-900">{course.crs_name}</h3>
                         <p className="text-sm text-gray-600 mt-1">
-                          {course.total_students} students • {course.total_exams} exams
+                          {course.track_name} - {course.bran_name} (Intake {course.intake_year})
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {course.total_students_in_track} students • {course.exams_created} exams ({course.normal_exams} normal, {course.corrective_exams} corrective)
                         </p>
                       </div>
                       <button className="px-4 py-2 bg-iti-red text-white rounded-lg hover:bg-iti-maroon transition-colors">
@@ -165,16 +190,19 @@ export default function InstructorDashboard() {
                   <thead>
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Track/Branch</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submissions</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Score</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {exams.map((exam) => (
-                      <tr key={exam.exam_id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{exam.course_name}</td>
+                      <tr key={exam.ex_id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{exam.crs_name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{exam.track_name} - {exam.bran_name}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{exam.exam_date || 'N/A'}</td>
                         <td className="px-4 py-3 text-sm">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -183,9 +211,20 @@ export default function InstructorDashboard() {
                             {exam.exam_type}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{exam.submissions}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {exam.students_who_submitted}/{exam.total_students_in_track} ({exam.submission_rate_percentage?.toFixed(1) || '0'}%)
+                        </td>
                         <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                          {exam.avg_score?.toFixed(1) || 'N/A'}%
+                          {exam.average_score?.toFixed(1) || 'N/A'}%
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            exam.exam_status === 'Completed' ? 'bg-green-100 text-green-800' :
+                            exam.exam_status === 'Ongoing' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {exam.exam_status}
+                          </span>
                         </td>
                       </tr>
                     ))}

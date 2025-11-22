@@ -2,21 +2,34 @@ import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 
 interface StudentGrade {
-  exam_id: number;
-  course_name: string;
-  exam_date: string | null;
+  student_name: string;
+  crs_name: string;
   exam_type: string;
-  student_score: number | null;
-  max_score: number;
-  percentage: number | null;
-  passed: boolean;
+  exam_date: string | null;
+  grade: string | null;  // Changed from number to string - backend returns letter grades (A, B, C, etc.)
+  status: string;
+  intake_year: number;
+  track_name: string | null;
+  bran_name: string | null;
 }
 
 interface UpcomingExam {
-  exam_id: number;
-  course_name: string;
+  ex_id: number;
+  crs_name: string;
+  crs_description: string | null;
   exam_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  exam_type: string;
   instructor_name: string;
+  days_until_exam: number | null;
+  hours_until_start: number | null;
+  submission_status: string;
+  my_score: number | null;
+  my_grade: string | null;  // Changed from number to string - backend returns letter grades
+  result: string | null;
+  availability_status: string;
+  can_take_exam: number;
 }
 
 export default function StudentDashboard() {
@@ -40,31 +53,31 @@ export default function StudentDashboard() {
       }
 
       try {
-        // TODO: Implement backend endpoints for student-specific data
-        // For now, using placeholder data
         const token = localStorage.getItem('token');
 
         // Fetch student's grades
-        // const gradesResponse = await fetch(`http://localhost:8000/api/student/grades`, {
-        //   headers: { 'Authorization': `Bearer ${token}` }
-        // });
+        const gradesResponse = await fetch(`http://localhost:8000/api/student/grades`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!gradesResponse.ok) {
+          throw new Error('Failed to fetch grades');
+        }
+
+        const gradesData = await gradesResponse.json();
+        setGrades(gradesData);
 
         // Fetch upcoming exams
-        // const examsResponse = await fetch(`http://localhost:8000/api/student/upcoming-exams`, {
-        //   headers: { 'Authorization': `Bearer ${token}` }
-        // });
+        const examsResponse = await fetch(`http://localhost:8000/api/student/upcoming-exams`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-        // Placeholder data for now
-        setGrades([
-          { exam_id: 1, course_name: 'Database Fundamentals', exam_date: '2025-10-15', exam_type: 'Normal', student_score: 85, max_score: 100, percentage: 85, passed: true },
-          { exam_id: 2, course_name: 'Web Development', exam_date: '2025-10-20', exam_type: 'Normal', student_score: 72, max_score: 100, percentage: 72, passed: true },
-          { exam_id: 3, course_name: 'Python Programming', exam_date: '2025-10-25', exam_type: 'Normal', student_score: 55, max_score: 100, percentage: 55, passed: false },
-        ]);
+        if (!examsResponse.ok) {
+          throw new Error('Failed to fetch upcoming exams');
+        }
 
-        setUpcomingExams([
-          { exam_id: 4, course_name: 'Advanced Databases', exam_date: '2025-11-25', instructor_name: 'Dr. Ahmed Mohamed' },
-          { exam_id: 5, course_name: 'React Framework', exam_date: '2025-11-28', instructor_name: 'Eng. Sara Ali' },
-        ]);
+        const examsData = await examsResponse.json();
+        setUpcomingExams(examsData);
 
         setLoading(false);
       } catch (err) {
@@ -96,10 +109,15 @@ export default function StudentDashboard() {
     );
   }
 
-  const passedExams = grades.filter(g => g.passed).length;
-  const failedExams = grades.filter(g => !g.passed).length;
-  const averageScore = grades.length > 0
-    ? grades.reduce((sum, g) => sum + (g.percentage || 0), 0) / grades.length
+  // Note: Backend returns status as 'Pass' or 'Fail' (not 'Passed' or 'Failed')
+  const passedExams = grades.filter(g => g.status === 'Pass').length;
+  const failedExams = grades.filter(g => g.status === 'Fail').length;
+
+  // Since grades are letter grades (A, B, C, etc.), we need to fetch the numeric scores
+  // from upcoming exams which have my_score field
+  const completedExams = upcomingExams.filter(e => e.my_score !== null);
+  const averageScore = completedExams.length > 0
+    ? completedExams.reduce((sum, e) => sum + (e.my_score || 0), 0) / completedExams.length
     : 0;
 
   return (
@@ -147,16 +165,66 @@ export default function StudentDashboard() {
             ) : (
               <div className="space-y-4">
                 {upcomingExams.map((exam) => (
-                  <div key={exam.exam_id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div key={exam.ex_id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-lg text-gray-900">{exam.course_name}</h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {exam.exam_date || 'Date TBD'} • Instructor: {exam.instructor_name}
-                        </p>
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-semibold text-lg text-gray-900">{exam.crs_name}</h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {exam.exam_date || 'Date TBD'} • {exam.start_time || 'TBD'} - {exam.end_time || 'TBD'}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Instructor: {exam.instructor_name} • Type: {exam.exam_type}
+                            </p>
+                          </div>
+                          <div className="ml-4">
+                            {exam.days_until_exam !== null && exam.days_until_exam >= 0 && (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                exam.days_until_exam === 0 ? 'bg-red-100 text-red-800' :
+                                exam.days_until_exam <= 3 ? 'bg-orange-100 text-orange-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {exam.days_until_exam === 0 ? 'Today' : `${exam.days_until_exam} days`}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            exam.submission_status === 'Submitted' ? 'bg-green-100 text-green-800' :
+                            exam.submission_status === 'Not Submitted' ? 'bg-gray-100 text-gray-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {exam.submission_status}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            exam.availability_status === 'Available' ? 'bg-green-100 text-green-800' :
+                            exam.availability_status === 'Upcoming' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {exam.availability_status}
+                          </span>
+                          {exam.result && (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              exam.result === 'Pass' ? 'bg-green-100 text-green-800' :
+                              exam.result === 'Fail' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {exam.result} ({exam.my_grade || 'N/A'})
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <button className="px-4 py-2 bg-iti-red text-white rounded-lg hover:bg-iti-maroon transition-colors">
-                        View Details
+                      <button
+                        className={`ml-4 px-4 py-2 rounded-lg transition-colors ${
+                          exam.can_take_exam === 1 ?
+                          'bg-iti-red text-white hover:bg-iti-maroon' :
+                          'bg-gray-300 text-gray-600 cursor-not-allowed'
+                        }`}
+                        disabled={exam.can_take_exam !== 1}
+                      >
+                        {exam.submission_status === 'Submitted' ? 'View Result' : 'Take Exam'}
                       </button>
                     </div>
                   </div>
@@ -180,17 +248,18 @@ export default function StudentDashboard() {
                   <thead>
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Track/Branch</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Percentage</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Result</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {grades.map((grade) => (
-                      <tr key={grade.exam_id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{grade.course_name}</td>
+                    {grades.map((grade, index) => (
+                      <tr key={`${grade.crs_name}-${grade.exam_date}-${index}`} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{grade.crs_name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{grade.track_name || 'N/A'} - {grade.bran_name || 'N/A'}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{grade.exam_date || 'N/A'}</td>
                         <td className="px-4 py-3 text-sm">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -199,17 +268,16 @@ export default function StudentDashboard() {
                             {grade.exam_type}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          {grade.student_score || 'N/A'} / {grade.max_score}
-                        </td>
                         <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                          {grade.percentage?.toFixed(1) || 'N/A'}%
+                          {grade.grade !== null ? grade.grade : 'N/A'}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            grade.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            grade.status === 'Pass' ? 'bg-green-100 text-green-800' :
+                            grade.status === 'Fail' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {grade.passed ? 'Passed' : 'Failed'}
+                            {grade.status}
                           </span>
                         </td>
                       </tr>

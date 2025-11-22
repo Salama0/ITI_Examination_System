@@ -81,13 +81,26 @@ def decode_access_token(token: str) -> Optional[TokenData]:
     """Decode and validate a JWT token"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
+        user_id_str: str = payload.get("sub")
         email: str = payload.get("email")
         user_type: str = payload.get("user_type")
 
-        if user_id is None:
+        if user_id_str is None:
+            print("ERROR - user_id is None in JWT payload!")
             return None
 
+        # Convert user_id from string to int
+        user_id: int = int(user_id_str)
+
+        print(f"DEBUG - JWT Decoded successfully:")
+        print(f"  user_id: {user_id}")
+        print(f"  email: {email}")
+        print(f"  user_type: {user_type}")
+
         return TokenData(user_id=user_id, email=email, user_type=user_type)
-    except JWTError:
+    except JWTError as e:
+        print(f"ERROR - JWT Decode failed: {e}")
+        return None
+    except ValueError as e:
+        print(f"ERROR - Failed to convert user_id to int: {e}")
         return None

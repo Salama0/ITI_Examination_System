@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from .config import get_settings, get_db, test_connection
-from .api import dashboard_router, auth_router
+from .api import dashboard_router, auth_router, instructor_router, student_router
 
 settings = get_settings()
 
@@ -64,6 +64,12 @@ app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 
 # Dashboard API
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["Dashboard"])
+
+# Instructor API
+app.include_router(instructor_router, prefix="/api/instructor", tags=["Instructor"])
+
+# Student API
+app.include_router(student_router, prefix="/api/student", tags=["Student"])
 
 # TODO: Add more routers as needed
 # app.include_router(students_router, prefix="/api/students", tags=["Students"])
